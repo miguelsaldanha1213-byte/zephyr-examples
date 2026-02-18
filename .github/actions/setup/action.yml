@@ -1,48 +1,36 @@
 name: Setup Node and PNPM
-description: Sets up Node.js and PNPM with caching
+description: "Optimized Node.js and PNPM setup with integrated caching and recursive installation"
 
 inputs:
-  os:
-    required: true
-    description: "Operating system"
-    default: ubuntu-latest
   node-version:
-    required: true
-    description: "Node.js version"
+    required: false
+    description: "Node.js version to use"
     default: "24"
+  pnpm-version:
+    required: false
+    description: "PNPM version to install"
+    default: "10.6.3"
 
 runs:
   using: "composite"
   steps:
-    - uses: pnpm/action-setup@v4
+    - name: Install PNPM
+      uses: pnpm/action-setup@v4
       with:
-        version: 10.6.3
+        version: ${{ inputs.pnpm-version }}
         run_install: false
-    - uses: actions/setup-node@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
         cache: "pnpm"
-        cache-dependency-path: "**/pnpm-lock.yaml"
+
         registry-url: "https://registry.npmjs.org"
-    - name: Get pnpm store directory
+
+    - name: Install dependencies (All Workspaces)
       shell: bash
       run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-    - uses: actions/cache@v4
-      with:
-        path: ${{ env.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-
-    - name: Install dependencies in all workspaces
-      shell: bash
-      run: |
-        echo "Installing dependencies in nx workspace..."
-        cd nx && pnpm install --prefer-offline
-        echo "Installing dependencies in vanilla workspace..."
-        cd ../vanilla && pnpm install --prefer-offline
-        echo "Installing dependencies in turborepo workspace..."
-        cd ../turborepo && pnpm install --prefer-offline
-        echo "Installing dependencies in scripts..."
-        cd ../scripts && pnpm install --prefer-offline
-        echo "✓ All dependencies installed"
+        echo "🚀 Starting recursive installation..."
+        pnpm install --recursive --prefer-offline --frozen-lockfile
+        echo "✅ All dependencies installed successfully!"
